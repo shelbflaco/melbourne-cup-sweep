@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026 Melbourne Cup Sweepstake Randomiser</title>
+<style>
+:root{--navy:#102b24;--gold:#d8ad52;--cream:#f7f4ec;--ink:#18231f;--muted:#66736d}
+*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+header{background:linear-gradient(135deg,#102b24,#24513e);color:white;padding:30px 18px;text-align:center}
+header h1{margin:0 0 8px;font-size:clamp(25px,5vw,38px)}header p{margin:0;color:#e5eadd}
+main{max-width:900px;margin:22px auto;padding:0 15px 40px}
+.panel{background:white;border-radius:16px;padding:20px;margin:16px 0;box-shadow:0 4px 18px #14251a12}
+h2{margin:0 0 14px;color:var(--navy)}.sub{color:var(--muted);font-size:14px;line-height:1.5}
+.names{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+input{width:100%;padding:13px;border:1px solid #cbd4ce;border-radius:9px;font-size:16px}
+button{border:0;border-radius:10px;padding:14px 18px;font-size:16px;font-weight:700;cursor:pointer}
+.primary{background:var(--navy);color:white;width:100%;margin-top:14px}.secondary{background:#edf1ed;color:var(--navy)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.prizes{display:flex;gap:10px;flex-wrap:wrap}.prize{flex:1;min-width:130px;background:#f7f4ec;border-radius:10px;padding:13px;text-align:center}
+.prize strong{display:block;font-size:24px;color:var(--navy)}.prize span{font-size:13px;color:var(--muted)}
+.results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.person{border:1px solid #e0e6e1;border-radius:12px;padding:14px}.person h3{margin:0 0 9px;color:var(--navy)}
+.horse{padding:7px 0;border-top:1px solid #edf0ed;font-size:15px}.horse b{color:#98712b;margin-right:7px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
+.notice{padding:12px;border-radius:9px;background:#fff7e5;color:#624b1d;font-size:13px;line-height:1.45}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:10px}
+@media(max-width:560px){.names,.results{grid-template-columns:1fr}.panel{padding:16px}}
+@media print{body{background:white}header{background:white;color:black;padding:10px}header p{color:#333}.panel{box-shadow:none;border:1px solid #ddd;break-inside:avoid}.no-print{display:none!important}main{margin:0;max-width:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏇 Melbourne Cup Sweepstake</h1>
+  <p>2026 • Random horse draw • 8 players • 3 horses each</p>
+</header>
+<main>
+  <section class="panel">
+    <h2>Prize pool — $80</h2>
+    <div class="prizes">
+      <div class="prize"><strong>$50</strong><span>🥇 1st place</span></div>
+      <div class="prize"><strong>$20</strong><span>🥈 2nd place</span></div>
+      <div class="prize"><strong>$10</strong><span>🐌 Last horse to finish</span></div>
+    </div>
+    <p class="sub">8 participants × $10 entry. Each participant receives 3 randomly allocated horses.</p>
+  </section>
+
+  <section class="panel no-print">
+    <h2>1. Enter the 8 participants</h2>
+    <div class="names" id="nameFields"></div>
+    <button class="primary" id="drawBtn">🎲 Draw all 24 horses</button>
+    <p class="sub">The draw uses your browser's secure random-number generator. Each horse is allocated once only.</p>
+  </section>
+
+  <section class="panel" id="resultPanel" hidden>
+    <h2>2. Official sweepstake draw</h2>
+    <p class="sub" id="drawDate"></p>
+    <div class="results" id="results"></div>
+    <div class="actions no-print">
+      <button class="secondary" id="copyBtn">Copy results</button>
+      <button class="secondary" id="printBtn">Print / Save as PDF</button>
+      <button class="secondary" id="resetBtn">Reset for a new draw</button>
+    </div>
+  </section>
+  <section class="panel">
+    <h2>Race-day rules</h2>
+    <ul class="sub">
+      <li>First horse across the line wins $50 for its owner.</li>
+      <li>Second horse wins $20 for its owner.</li>
+      <li>Last horse to officially finish wins $10 for its owner.</li>
+      <li>If one person owns more than one prize-winning horse, they collect both prizes.</li>
+      <li>Scratched or withdrawn horses are not eligible for the last-place prize. Agree a replacement draw before the race if a horse is scratched.</li>
+    </ul>
+    <div class="notice">This file works offline. Send the HTML file to your colleague; they can open it in a web browser on a phone or computer. Run the draw once with everyone present, then copy or print the result.</div>
+  </section>
+  <footer>2026 Melbourne Cup Sweepstake • Friendly office sweep</footer>
+</main>
+<script>
+const horses = [
+[1,"Sons And Lovers"],[2,"Trustyourinstinct"],[3,"Knight's Choice"],[4,"Middle Earth"],
+[5,"Vauban"],[6,"Enfjaar"],[7,"Royal Supremacy"],[8,"Wine Dark Sea"],
+[9,"Asterix"],[10,"Goodie Two Shoes"],[11,"Juja Kibo"],[12,"Hopewell Rock"],
+[13,"Onesmoothoperator"],[14,"Soul Of Spain"],[15,"Zahrann"],[16,"So You Are"],
+[17,"Future History"],[18,"James J Braddock"],[19,"Kizlyar"],[20,"Point Of Law"],
+[21,"Strictly Business"],[22,"Mr Monaco"],[23,"Zakouma"],[24,"Shockletz"]
+];
+const fields=document.getElementById('nameFields');
+for(let i=1;i<=8;i++){const input=document.createElement('input');input.placeholder=`Participant ${i}`;input.id=`p${i}`;input.maxLength=40;fields.appendChild(input);}
+let finalText='';
+function secureShuffle(arr){
+  const a=[...arr];
+  if(!window.crypto || !crypto.getRandomValues) throw new Error("Secure random generator unavailable in this browser.");
+  const buf=new Uint32Array(1);
+  for(let i=a.length-1;i>0;i--){
+    const max=0x100000000, limit=max-(max%(i+1));
+    let x; do{crypto.getRandomValues(buf);x=buf[0];}while(x>=limit);
+    const j=x%(i+1);[a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+document.getElementById('drawBtn').addEventListener('click',()=>{
+  const names=Array.from({length:8},(_,i)=>document.getElementById(`p${i+1}`).value.trim());
+  if(names.some(n=>!n)){alert('Please enter all 8 participant names before drawing.');return;}
+  if(new Set(names.map(n=>n.toLowerCase())).size!==8){alert('Please enter 8 different participant names.');return;}
+  try{
+    const shuffled=secureShuffle(horses);
+    const groups=Array.from({length:8},(_,i)=>shuffled.slice(i*3,i*3+3));
+    const results=document.getElementById('results');results.innerHTML='';
+    groups.forEach((group,i)=>{
+      const card=document.createElement('div');card.className='person';
+      const h=document.createElement('h3');h.textContent=names[i];card.appendChild(h);
+      group.forEach(([num,name])=>{
+        const line=document.createElement('div');line.className='horse';
+        const b=document.createElement('b');b.textContent=`${num}.`;line.appendChild(b);
+        line.appendChild(document.createTextNode(name));card.appendChild(line);
+      });
+      results.appendChild(card);
+    });
+    finalText='2026 MELBOURNE CUP SWEEPSTAKE\\n$10 entry • $80 prize pool\\nPrizes: 1st $50 | 2nd $20 | Last official finisher $10\\n\\n'+groups.map((g,i)=>names[i]+'\\n'+g.map(([n,h])=>`${n}. ${h}`).join('\\n')).join('\\n\\n');
+    document.getElementById('drawDate').textContent='Draw completed: '+new Date().toLocaleString();
+    document.getElementById('resultPanel').hidden=false;
+    document.getElementById('resultPanel').scrollIntoView({behavior:'smooth'});
+    document.getElementById('drawBtn').disabled=true;
+  }catch(e){alert(e.message);}
+});
+document.getElementById('copyBtn').addEventListener('click',async()=>{
+  try{await navigator.clipboard.writeText(finalText);alert('Sweepstake results copied.');}
+  catch(e){alert('Copy is not available here. Use Print / Save as PDF instead.');}
+});
+document.getElementById('printBtn').addEventListener('click',()=>window.print());
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  if(!confirm('This will clear the current draw. Are you sure?'))return;
+  document.getElementById('resultPanel').hidden=true;
+  document.getElementById('drawBtn').disabled=false;
+  document.getElementById('results').innerHTML='';
+  finalText='';
+});
+</script>
+</body>
+</html>
