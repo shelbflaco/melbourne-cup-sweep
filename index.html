@@ -13,7 +13,7 @@ main{max-width:900px;margin:22px auto;padding:0 15px 40px}
 .panel{background:white;border-radius:16px;padding:20px;margin:16px 0;box-shadow:0 4px 18px #14251a12}
 h2{margin:0 0 14px;color:var(--navy)}.sub{color:var(--muted);font-size:14px;line-height:1.5}
 .names{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-input{width:100%;padding:13px;border:1px solid #cbd4ce;border-radius:9px;font-size:16px}
+input,select{width:100%;padding:13px;border:1px solid #cbd4ce;border-radius:9px;font-size:16px;background:white;color:var(--ink)}
 button{border:0;border-radius:10px;padding:14px 18px;font-size:16px;font-weight:700;cursor:pointer}
 .primary{background:var(--navy);color:white;width:100%;margin-top:14px}.secondary{background:#edf1ed;color:var(--navy)}
 button:disabled{opacity:.45;cursor:not-allowed}
@@ -32,24 +32,28 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:10px}
 <body>
 <header>
   <h1>🏇 Melbourne Cup Sweepstake</h1>
-  <p>2026 • Random horse draw • 8 players • 3 horses each</p>
+  <p>2026 • Random horse draw • Flexible number of players</p>
 </header>
 <main>
-  <section class="panel">
-    <h2>Prize pool — $80</h2>
+  <section class="panel" id="poolPanel">
+    <h2 id="poolHeading">Prize pool — $80</h2>
     <div class="prizes">
-      <div class="prize"><strong>$50</strong><span>🥇 1st place</span></div>
-      <div class="prize"><strong>$20</strong><span>🥈 2nd place</span></div>
-      <div class="prize"><strong>$10</strong><span>🐌 Last horse to finish</span></div>
+      <div class="prize"><strong id="firstPrize">$50</strong><span>🥇 1st place</span></div>
+      <div class="prize"><strong id="secondPrize">$20</strong><span>🥈 2nd place</span></div>
+      <div class="prize"><strong id="lastPrize">$10</strong><span>🐌 Last official finisher</span></div>
     </div>
-    <p class="sub">8 participants × $10 entry. Each participant receives 3 randomly allocated horses.</p>
+    <p class="sub" id="poolSummary">8 participants × $10 entry. 3 horses each.</p>
   </section>
 
   <section class="panel no-print">
-    <h2>1. Enter the 8 participants</h2>
+    <h2>1. Set up your sweepstake</h2>
+    <label for="playerCount"><b>Number of participants</b></label>
+    <select id="playerCount" aria-label="Number of participants"></select>
+    <p class="sub" id="allocationHint">Choose between 4 and 24 participants. All 24 horses will be allocated once.</p>
+    <h2 style="margin-top:18px">Enter participant names</h2>
     <div class="names" id="nameFields"></div>
     <button class="primary" id="drawBtn">🎲 Draw all 24 horses</button>
-    <p class="sub">The draw uses your browser's secure random-number generator. Each horse is allocated once only.</p>
+    <p class="sub">$10 per person. Horses are randomly allocated as evenly as possible. Each horse is allocated once only.</p>
   </section>
 
   <section class="panel" id="resultPanel" hidden>
@@ -65,13 +69,14 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:10px}
   <section class="panel">
     <h2>Race-day rules</h2>
     <ul class="sub">
-      <li>First horse across the line wins $50 for its owner.</li>
-      <li>Second horse wins $20 for its owner.</li>
-      <li>Last horse to officially finish wins $10 for its owner.</li>
-      <li>If one person owns more than one prize-winning horse, they collect both prizes.</li>
+      <li>First horse across the line wins the first-place prize.</li>
+      <li>Second horse wins the second-place prize.</li>
+      <li>Last horse to officially finish wins the last-place prize.</li>
+      <li>If one person owns more than one prize-winning horse, they collect both/all prizes.</li>
       <li>Scratched or withdrawn horses are not eligible for the last-place prize. Agree a replacement draw before the race if a horse is scratched.</li>
+      <li>Prize amounts are recalculated from the $10 entries using the original 62.5% / 25% / 12.5% split, rounded to whole dollars.</li>
     </ul>
-    <div class="notice">This file works offline. Send the HTML file to your colleague; they can open it in a web browser on a phone or computer. Run the draw once with everyone present, then copy or print the result.</div>
+    <div class="notice">This sweepstake supports 4 to 24 participants. The 24 horses are shared as evenly as possible; some participants may receive one more horse than others when the numbers do not divide evenly.</div>
   </section>
   <footer>2026 Melbourne Cup Sweepstake • Friendly office sweep</footer>
 </main>
@@ -85,56 +90,66 @@ const horses = [
 [21,"Strictly Business"],[22,"Mr Monaco"],[23,"Zakouma"],[24,"Shockletz"]
 ];
 const fields=document.getElementById('nameFields');
-for(let i=1;i<=8;i++){const input=document.createElement('input');input.placeholder=`Participant ${i}`;input.id=`p${i}`;input.maxLength=40;fields.appendChild(input);}
+const playerCount=document.getElementById('playerCount');
+for(let n=4;n<=24;n++){const option=document.createElement('option');option.value=n;option.textContent=`${n} people`;if(n===8)option.selected=true;playerCount.appendChild(option);}
 let finalText='';
+function getPrizes(count){
+  const pool=count*10;
+  const first=Math.round(pool*0.625);
+  const second=Math.round(pool*0.25);
+  return {pool,first,second,last:pool-first-second};
+}
+function updatePool(){
+  const count=Number(playerCount.value), p=getPrizes(count);
+  document.getElementById('poolHeading').textContent=`Prize pool — $${p.pool}`;
+  document.getElementById('firstPrize').textContent=`$${p.first}`;
+  document.getElementById('secondPrize').textContent=`$${p.second}`;
+  document.getElementById('lastPrize').textContent=`$${p.last}`;
+  const base=Math.floor(24/count), extra=24%count;
+  document.getElementById('poolSummary').textContent=`${count} participants × $10 entry. ${extra===0?`${base} horses each.`:`${base} or ${base+1} horses each.`}`;
+  document.getElementById('allocationHint').textContent=`Choose between 4 and 24 participants. ${extra===0?`Each person will receive ${base} horses.`:`${extra} people will receive ${base+1} horses and ${count-extra} people will receive ${base} horses.`}`;
+  fields.innerHTML='';
+  for(let i=1;i<=count;i++){const input=document.createElement('input');input.placeholder=`Participant ${i}`;input.id=`p${i}`;input.maxLength=40;input.autocomplete='off';fields.appendChild(input);}
+  document.getElementById('resultPanel').hidden=true;
+  document.getElementById('drawBtn').disabled=false;
+  document.getElementById('results').innerHTML='';finalText='';
+}
+playerCount.addEventListener('change',updatePool);
+updatePool();
 function secureShuffle(arr){
   const a=[...arr];
-  if(!window.crypto || !crypto.getRandomValues) throw new Error("Secure random generator unavailable in this browser.");
+  if(!window.crypto || !crypto.getRandomValues) throw new Error('Secure random generator unavailable in this browser.');
   const buf=new Uint32Array(1);
-  for(let i=a.length-1;i>0;i--){
-    const max=0x100000000, limit=max-(max%(i+1));
-    let x; do{crypto.getRandomValues(buf);x=buf[0];}while(x>=limit);
-    const j=x%(i+1);[a[i],a[j]]=[a[j],a[i]];
-  }
+  for(let i=a.length-1;i>0;i--){const max=0x100000000,limit=max-(max%(i+1));let x;do{crypto.getRandomValues(buf);x=buf[0];}while(x>=limit);const j=x%(i+1);[a[i],a[j]]=[a[j],a[i]];}
   return a;
 }
 document.getElementById('drawBtn').addEventListener('click',()=>{
-  const names=Array.from({length:8},(_,i)=>document.getElementById(`p${i+1}`).value.trim());
-  if(names.some(n=>!n)){alert('Please enter all 8 participant names before drawing.');return;}
-  if(new Set(names.map(n=>n.toLowerCase())).size!==8){alert('Please enter 8 different participant names.');return;}
+  const count=Number(playerCount.value);
+  const names=Array.from({length:count},(_,i)=>document.getElementById(`p${i+1}`).value.trim());
+  if(names.some(n=>!n)){alert(`Please enter all ${count} participant names before drawing.`);return;}
+  if(new Set(names.map(n=>n.toLowerCase())).size!==count){alert('Please enter different names for each participant.');return;}
   try{
     const shuffled=secureShuffle(horses);
-    const groups=Array.from({length:8},(_,i)=>shuffled.slice(i*3,i*3+3));
+    const groups=Array.from({length:count},()=>[]);
+    shuffled.forEach((horse,i)=>groups[i%count].push(horse));
+    const p=getPrizes(count);
     const results=document.getElementById('results');results.innerHTML='';
     groups.forEach((group,i)=>{
       const card=document.createElement('div');card.className='person';
       const h=document.createElement('h3');h.textContent=names[i];card.appendChild(h);
-      group.forEach(([num,name])=>{
-        const line=document.createElement('div');line.className='horse';
-        const b=document.createElement('b');b.textContent=`${num}.`;line.appendChild(b);
-        line.appendChild(document.createTextNode(name));card.appendChild(line);
-      });
+      group.forEach(([num,name])=>{const line=document.createElement('div');line.className='horse';const b=document.createElement('b');b.textContent=`${num}.`;line.appendChild(b);line.appendChild(document.createTextNode(name));card.appendChild(line);});
       results.appendChild(card);
     });
-    finalText='2026 MELBOURNE CUP SWEEPSTAKE\\n$10 entry • $80 prize pool\\nPrizes: 1st $50 | 2nd $20 | Last official finisher $10\\n\\n'+groups.map((g,i)=>names[i]+'\\n'+g.map(([n,h])=>`${n}. ${h}`).join('\\n')).join('\\n\\n');
+    finalText=`2026 MELBOURNE CUP SWEEPSTAKE\n${count} participants × $10 = $${p.pool} prize pool\nPrizes: 1st $${p.first} | 2nd $${p.second} | Last official finisher $${p.last}\n\n`+groups.map((g,i)=>names[i]+'\n'+g.map(([n,h])=>`${n}. ${h}`).join('\n')).join('\n\n');
     document.getElementById('drawDate').textContent='Draw completed: '+new Date().toLocaleString();
     document.getElementById('resultPanel').hidden=false;
     document.getElementById('resultPanel').scrollIntoView({behavior:'smooth'});
     document.getElementById('drawBtn').disabled=true;
   }catch(e){alert(e.message);}
 });
-document.getElementById('copyBtn').addEventListener('click',async()=>{
-  try{await navigator.clipboard.writeText(finalText);alert('Sweepstake results copied.');}
-  catch(e){alert('Copy is not available here. Use Print / Save as PDF instead.');}
-});
+document.getElementById('copyBtn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(finalText);alert('Sweepstake results copied.');}catch(e){alert('Copy is not available here. Use Print / Save as PDF instead.');}});
 document.getElementById('printBtn').addEventListener('click',()=>window.print());
-document.getElementById('resetBtn').addEventListener('click',()=>{
-  if(!confirm('This will clear the current draw. Are you sure?'))return;
-  document.getElementById('resultPanel').hidden=true;
-  document.getElementById('drawBtn').disabled=false;
-  document.getElementById('results').innerHTML='';
-  finalText='';
-});
+document.getElementById('resetBtn').addEventListener('click',()=>{if(!confirm('This will clear the current draw. Are you sure?'))return;document.getElementById('resultPanel').hidden=true;document.getElementById('drawBtn').disabled=false;document.getElementById('results').innerHTML='';finalText='';});
 </script>
 </body>
 </html>
